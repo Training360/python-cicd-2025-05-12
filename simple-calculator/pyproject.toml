@@ -4,4 +4,8 @@ version = "0.0.1"
 dependencies = ["python-barcode"]
 
 [project.optional-dependencies]
-dev = ["pytest", "pytest-cov", "coverage", "pipdeptree"]
+dev = ["build", "pytest", "pytest-cov", "coverage", "pipdeptree"]
+
+[build-system]
+requires = ["setuptools", "wheel"]
+build-backend = "setuptools.build_meta"
