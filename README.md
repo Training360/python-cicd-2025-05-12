@@ -1,0 +1,2 @@
+# Python CI/CD képzés
+
