@@ -1,0 +1,7 @@
+[project]
+name = "calculator"
+version = "0.0.1"
+dependencies = ["python-barcode"]
+
+[project.optional-dependencies]
+dev = ["pytest", "pytest-cov", "coverage", "pipdeptree"]
