@@ -1,6 +1,6 @@
 services:
   postgres:
-    image: postgres
+    image: postgres:17.5
     expose:
       - 5432
     environment:
@@ -14,7 +14,7 @@ services:
       retries: 10
 
   employees-app:
-    image: employees
+    image: employees:0.0.1
     depends_on:
       postgres:
         condition: service_healthy
@@ -35,7 +35,7 @@ services:
   api-test:
     profiles:
       - api-test
-    image: employees-test
+    image: employees:0.0.1-test
     depends_on:
       employees-app:
         condition: service_healthy
@@ -87,7 +87,7 @@ services:
   ui-test:
     profiles:
       - ui-test
-    image: employees-test
+    image: employees:0.0.1-test
     depends_on:
       employees-app:
         condition: service_healthy

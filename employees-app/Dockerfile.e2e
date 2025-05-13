@@ -1,0 +1,5 @@
+FROM python:3.13.3
+WORKDIR /app
+COPY pyproject.toml .
+RUN pip install --editable .[dev]
+COPY test/e2e test/e2e
