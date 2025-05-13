@@ -7,3 +7,6 @@ test:
 
 dist:
 	python -m build .
+
+upload:
+	python -m twine upload --config-file .pypirc dist/*

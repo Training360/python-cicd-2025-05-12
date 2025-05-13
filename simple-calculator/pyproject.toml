@@ -1,10 +1,10 @@
 [project]
-name = "calculator"
+name = "training-calculator"
 version = "0.0.1"
 dependencies = ["python-barcode"]
 
 [project.optional-dependencies]
-dev = ["build", "pytest", "pytest-cov", "coverage", "pipdeptree"]
+dev = ["build", "pytest", "pytest-cov", "coverage", "pipdeptree", "twine"]
 
 [build-system]
 requires = ["setuptools", "wheel"]
