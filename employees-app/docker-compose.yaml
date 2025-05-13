@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:17.5
+    environment:
+      POSTGRES_USER: employees
+      POSTGRES_PASSWORD: employees
+      POSTGRES_DB: employees
+    healthcheck:
+      test: ["CMD-SHELL", "sh -c 'pg_isready -U employees -d employees'"]
+      interval: 3s
+      timeout: 2s
+      retries: 10
+
+  employees-app:
+    image: employees
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_HOST: postgres
+    ports:
+      - "5000:5000"
