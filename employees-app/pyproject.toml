@@ -15,4 +15,6 @@ dev = [
     "setuptools",
     "wheel",
     "twine",
+    "mkdocs",
+    "mkdocs_puml",
 ]
