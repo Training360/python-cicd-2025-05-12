@@ -1,0 +1,106 @@
+stages:
+  - build
+  - build-image
+  - deploy
+
+.build-job:
+  stage: build
+  image: python:3.13
+  script:
+    - echo "Building the project..."
+    - pip install --upgrade pip
+    - pip install --editable ".[dev]"
+    - pytest -v --cov=employees --cov-report=html  test/unit
+    - python -m build .
+    # - twine upload --repository-url ${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi dist/*
+  artifacts:
+    paths:
+      - htmlcov/
+  cache:
+    paths:
+      - .cache/pip
+  variables:
+    PIP_CACHE_DIR: .cache/pip
+    TWINE_USERNAME: "gitlab-ci-token"
+    TWINE_PASSWORD: "${CI_JOB_TOKEN}"
+
+build-image-job:
+  stage: build-image
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - echo "Building the Docker image..."
+    - echo "CI_REGISTRY_IMAGE:" ${CI_REGISTRY_IMAGE}
+    - docker build -t ${CI_REGISTRY_IMAGE}:0.0.1 .
+    - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}
+    - docker push ${CI_REGISTRY_IMAGE}:0.0.1
+
+.integration-test-job:
+  stage: deploy
+  image: python:3.13
+  needs:
+    - build-job
+  services:
+    - postgres:17.4
+  script:
+    - echo "Running integration tests..."
+    - pip install --upgrade pip
+    - pip install --editable ".[dev]"
+    - pytest -v test/integration
+  cache:
+    paths:
+      - .cache/pip
+  variables:
+    PIP_CACHE_DIR: .cache/pip
+    POSTGRES_USER: employees
+    POSTGRES_PASSWORD: employees
+    POSTGRES_DB: employees
+    DATABASE_HOST: postgres
+
+.e2e-build-test-image-job:
+  stage: deploy
+  image: docker:latest
+  services:
+    - docker:dind
+  script:
+    - echo "Building the E2E test Docker image..."
+    - docker build -t ${CI_REGISTRY_IMAGE}:0.0.1-test -f Dockerfile.e2e .
+    - docker login -u ${CI_REGISTRY_USER} -p ${CI_REGISTRY_PASSWORD} ${CI_REGISTRY}
+    - docker push ${CI_REGISTRY_IMAGE}:0.0.1-test
+
+.e2e-test-job:
+  stage: deploy
+  image: docker:latest
+  services:
+    - docker:dind
+  needs:
+    - e2e-build-test-image-job
+  script:
+    - echo "Running E2E tests..."
+    - docker pull ${CI_REGISTRY_IMAGE}:0.0.1
+    - docker tag ${CI_REGISTRY_IMAGE}:0.0.1 employees:0.0.1
+    - docker pull ${CI_REGISTRY_IMAGE}:0.0.1-test
+    - docker tag ${CI_REGISTRY_IMAGE}:0.0.1-test employees:0.0.1-test
+    - cd employees-e2e
+    - mkdir videos
+    - chmod 777 videos
+    - docker compose --profile ui-test up --abort-on-container-exit
+  artifacts:
+    paths:
+      - employees-e2e/videos/
+
+.code-quality-job:
+  stage: deploy
+  script:
+    - echo "Running Code quality checks..."
+
+deploy-to-production-job:
+  stage: deploy
+  script:
+    - echo "Deploying to production..."
+    - chmod 600 ${PRIVATE_KEY}
+    - ssh -o StrictHostKeyChecking=no -i ${PRIVATE_KEY} root@164.92.129.119 "
+      docker pull ${CI_REGISTRY_IMAGE}:0.0.1 &&
+      docker stop employees-app-o && docker rm employees-app-o &&
+      docker run -d -p 5000:5000 --network employees-net --name employees-app-o -e DATABASE_HOST=employees-postgres ${CI_REGISTRY_IMAGE}:0.0.1"

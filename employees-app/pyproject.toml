@@ -11,4 +11,8 @@ dev = [
     "selenium",
     "webdriver-manager",
     "ruff",
+    "build",
+    "setuptools",
+    "wheel",
+    "twine",
 ]
